@@ -148,10 +148,18 @@ struct CHIP8 {
     }
 };
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc<=1) {
+        std::cout << "USAGE: ROM path";
+        return 0;
+    }
     CHIP8 chips;
     chips.init();
-    chips.loadROM("roms/IBM Logo.ch8");
+    try {
+        chips.loadROM(argv[1]);
+    } catch (const runtime_error& e) {
+        return 1;
+    }
     Display::init(10);
     while (true) {
         if (Display::should_quit()) {
