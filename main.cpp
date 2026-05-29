@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include "display.h"
 
 using namespace std;
 
@@ -111,7 +112,36 @@ struct CHIP8 {
             I = (opcode & 0x0FFF);
             break;
 
-            case 0xD:
+            case 0xD: {
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                uint8_t Y = (opcode & 0x00F0) >> 4;
+                uint8_t N = (opcode & 0x000F);
+
+                uint8_t X_coord = V[X];
+                uint8_t Y_coord = V[Y];
+                V[0xF] = 0;
+
+                for (uint8_t row=0;row<N;row++) {
+                    uint8_t sprite_byte = memory[I + row];
+
+                    for (uint8_t col=0; col<8; col++) {
+                        auto bit = (sprite_byte >> (7-col)) & 1;
+
+                        auto x = (X_coord + col) % 64;
+                        auto y = (Y_coord + row) % 32;
+                        
+                        auto index = y * 64 + x;
+
+                        if (bit == 1) {
+                            if (display[index] == 1) {
+                                V[0xF] = 1;
+                            }
+                            display[index] ^= 1;
+                        }
+                    }
+
+                }
+            }
             
 
         }
@@ -119,5 +149,16 @@ struct CHIP8 {
 };
 
 int main() {
+    CHIP8 chips;
+    chips.init();
+    chips.loadROM("roms/IBM Logo.ch8");
+    Display::init(10);
+    while (true) {
+        if (Display::should_quit()) {
+            break;
+        }
+        chips.decode(chips.fetch());
+        Display::render(chips.display, 10);
+    }
     
 }

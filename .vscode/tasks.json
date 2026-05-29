@@ -21,7 +21,7 @@
     {
       "type": "shell",
       "label": "G++ Build All Files",
-      "command": "mkdir -p \"${fileDirname}/output\" && /opt/homebrew/bin/g++-15 -std=c++17 -g \"${fileDirname}\"/*.cpp -o \"${fileDirname}/output/app\" && cd \"${fileDirname}/output\" && ./app",
+      "command": "mkdir -p \"${fileDirname}/output\" && /opt/homebrew/bin/g++-15 -std=c++17 -g \"${fileDirname}\"/*.cpp -I/opt/homebrew/include/SDL2 -L/opt/homebrew/lib -lSDL2 -o \"${fileDirname}/output/app\" && cd \"${fileDirname}/output\" && ./app",
       "presentation": {
         "reveal": "always",
         "focus": true,
