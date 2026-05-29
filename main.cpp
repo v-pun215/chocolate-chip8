@@ -76,6 +76,10 @@ struct CHIP8 {
         }
     }
 
+    bool key_pressed(uint16_t key) {
+        // TO DO
+    }
+
     uint16_t fetch() {
         auto high = memory[PC]; // current instruction
         auto low = memory[PC+1]; // next
@@ -225,10 +229,21 @@ struct CHIP8 {
             I = (opcode & 0x0FFF);
             break;
 
-            case 0xB:
+            case 0xB: // Jump with offset
+            PC = (opcode & 0x0FFF) + V[0];
+            break;
 
+            case 0xC: { // random
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                random_device rd;
+                mt19937 gen(rd());
 
-            case 0xD: {
+                uniform_int_distribution<> distr(0, 255);
+                V[X] = distr(gen) & (opcode & 0x00FF); // generate random number, binary and it with NN and put in vx
+                break;
+            }
+
+            case 0xD: { //display
                 uint8_t X = (opcode & 0x0F00) >> 8;
                 uint8_t Y = (opcode & 0x00F0) >> 4;
                 uint8_t N = (opcode & 0x000F);
@@ -257,7 +272,49 @@ struct CHIP8 {
                     }
 
                 }
+                break;
             }
+
+            case 0xE: { // skip if key
+                uint8_t low = (opcode & 0x00FF);
+                uint8_t X = (opcode & 0x0F00) >> 8;
+
+                switch (low) {
+                    case 0x9E:
+                    if (key_pressed(V[X])) {
+                        PC+=2;
+                    }
+                    break;
+
+                    case 0xA1:
+                    if (!key_pressed(V[X])) {
+                        PC+=2;
+                    }
+                    break;
+                }
+                break;
+            }
+
+            case 0xF: { // timers
+                uint8_t low = (opcode & 0x00FF);
+                uint8_t X = (opcode & 0x0F00) >> 8;
+
+                switch (low) {
+                    case 07:
+                    V[X] = delay_timer;
+                    break;
+
+                    case 15:
+                    delay_timer = V[X];
+                    break;
+
+                    case 18:
+                    sound_timer = V[X];
+
+                }
+            }
+
+            
             
 
         }
