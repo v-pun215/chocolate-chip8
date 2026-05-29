@@ -300,21 +300,28 @@ struct CHIP8 {
                 uint8_t X = (opcode & 0x0F00) >> 8;
 
                 switch (low) {
-                    case 07:
+                    case 0x07:
                     V[X] = delay_timer;
                     break;
 
-                    case 15:
+                    case 0x15:
                     delay_timer = V[X];
                     break;
 
-                    case 18:
+                    case 0x18:
                     sound_timer = V[X];
+                    break;
+
+                    case 0x1E: // add to index
+                    I+=V[X];
+                    break;
+
+                    
 
                 }
             }
 
-            
+
             
 
         }
