@@ -74,6 +74,48 @@ struct CHIP8 {
             cerr << "Caught: " << e.what() << '\n';
         }
     }
+
+    uint16_t fetch() {
+        auto high = memory[PC]; // current instruction
+        auto low = memory[PC+1]; // next
+
+        uint16_t combined = ((uint16_t)high << 8) | low; // combine using bitwise shifting
+        PC+=2; // increment PC by 2
+        return combined;
+    }
+
+    void decode(uint16_t opcode) {
+        uint8_t first_nibble = (opcode & 0xF000) >> 12;
+
+        switch (first_nibble) {
+            case 0x0: // clear screen
+            display.fill(0);
+            break;
+
+            case 0x1: // jump
+            PC= (opcode & 0x0FFF);
+            break;
+
+            case 0x6: { // set register VX 
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                V[X] = opcode & 0x00FF;
+                break;
+            }
+
+            case 0x7: { // add value to register VX
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                V[X] += opcode & 0x00FF;
+                break;
+            }
+            case 0xA: // set index register I
+            I = (opcode & 0x0FFF);
+            break;
+
+            case 0xD:
+            
+
+        }
+    }
 };
 
 int main() {
