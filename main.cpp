@@ -6,7 +6,7 @@ using namespace std;
 struct CHIP8 {
     array<uint8_t, 4096> memory = {}; // memory is zero initialised unisigned 1 byte for 4096 bytes
 
-    array<bool, 64 * 32> display = {}; // display 
+    array<bool, 64 * 32> display = {}; // display
 
     uint16_t PC = 0x200; // program counter
 
@@ -134,6 +134,71 @@ struct CHIP8 {
                 break;
             }
 
+            case 0x8: { // Logical and arithmetic instructions
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                uint8_t Y = (opcode & 0x00F0) >> 4;
+                switch (opcode & 0x000F) {
+                    case 0:
+                    V[X] = V[Y]; // vx is set to vy
+                    break;
+
+                    case 1:
+                    V[X] = V[X]|V[Y]; // vx is set to bitwise OR of vx and vy
+                    break;
+
+                    case 2:
+                    V[X] = V[X]&V[Y]; // vx is set to bitwise AND of vx and vy
+                    break;
+
+                    case 3:
+                    V[X] = V[X]^V[Y]; // vx is set to XOR of vx and vy
+                    break;
+
+                    case 4:
+                    V[X] = V[X]+V[Y]; // vx is set to sum of vx and vy
+                    if (V[X]+V[Y] >255) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    break;
+
+                    case 5:
+                    V[X] = V[X] - V[Y];
+                    if (V[X]>=V[Y]) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    break;
+
+                    case 7:
+                    V[X] = V[Y] - V[X];
+                    if (V[Y]>=V[X]) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    break;
+
+                    case 6:
+                    V[X] = V[Y];
+                    V[X] >> 1; // shift to the right 1
+                    
+                    V[0xF] = V[X] & 1; // set VF to 1 if bit shifted out was 1, 0 if was 0;
+                    break;
+
+                    case 0xE:
+                    V[X] = V[Y];
+                    V[X] << 1; // shift to left 1
+                    V[0xF] = (V[X] >> 15) & 1; // set VF to 1 if bit shifted out was 1, 0 if was 0
+                    break;
+
+                }
+                break;
+            }
+
+
             case 0x9: {// skip conditionally
                 uint8_t X = (opcode & 0x0F00) >> 8;
                 uint8_t Y = (opcode & 0x00F0) >> 4;
@@ -159,6 +224,9 @@ struct CHIP8 {
             case 0xA: // set index register I
             I = (opcode & 0x0FFF);
             break;
+
+            case 0xB:
+
 
             case 0xD: {
                 uint8_t X = (opcode & 0x0F00) >> 8;
