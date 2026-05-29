@@ -12,7 +12,7 @@ struct CHIP8 {
 
     uint16_t I = 0; // index register
 
-    array<uint16_t, 16> stack = {};
+    vector<uint16_t> stack = {};
 
     uint8_t delay_timer = 0;
 
@@ -89,13 +89,61 @@ struct CHIP8 {
         uint8_t first_nibble = (opcode & 0xF000) >> 12;
 
         switch (first_nibble) {
-            case 0x0: // clear screen
-            display.fill(0);
+            case 0x0:
+            if (opcode == 0x00E0) // clear screen
+                display.fill(0);
+            
+            if (opcode == 0x00EE) { // return from subroutine
+                PC = stack.back();
+                stack.pop_back();
+            }
             break;
 
             case 0x1: // jump
             PC= (opcode & 0x0FFF);
             break;
+
+            case 0x2: // call subroutine
+            stack.push_back(PC);
+            PC = (opcode & 0x0FFF);
+            break;
+
+            case 0x3: { // skip conditionally
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                if (V[X] == (opcode & 0x00FF)) { // if V[X] == NNN
+                    PC+=2; // skip 1 2-byte instruction
+                }
+                break;
+            }
+
+            case 0x4: {// skip conditionally
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                if (V[X] != (opcode & 0x00FF)) { // if V[x] != NNN
+                    PC+=2; // skip 1 2-byte instruction
+                }
+                break;
+            }
+
+            case 0x5: {// skip conditionally
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                uint8_t Y = (opcode & 0x00F0) >> 4;
+
+                if (V[X] == V[Y]) { // if V[X] == V[Y]
+                    PC+=2; // skip 1 2-byte instruction
+                }
+                break;
+            }
+
+            case 0x9: {// skip conditionally
+                uint8_t X = (opcode & 0x0F00) >> 8;
+                uint8_t Y = (opcode & 0x00F0) >> 4;
+
+                if (V[X] != V[Y]) { // if V[X] != V[Y]
+                    PC+=2; // skip 1 2-byte instruction
+                }
+                break;
+            }
+
 
             case 0x6: { // set register VX 
                 uint8_t X = (opcode & 0x0F00) >> 8;
