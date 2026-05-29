@@ -1,1 +1,1 @@
-# A simple CHIP-8 Emulator written in C++
+# A simple CHIP-8 interpreter written in C++
