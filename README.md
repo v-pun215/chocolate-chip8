@@ -42,4 +42,9 @@ Build all C++ files in directory using the compiler of your choice, and run the 
 chocolatechip8 /path/to/rom
 ```
 
+To configure, create a `settings.txt`.
+
+Supported settings:
+1. modernshift=0 (to disable) or 1 (to enable) 
+
 Tested on macOS.
