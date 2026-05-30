@@ -41,7 +41,7 @@ namespace Display {
             for (int j=0;j<32;j++) {
                 if (display[j * 64 + i] == 1) {
                     SDL_Rect rect = { i * scale, j * scale, scale, scale };
-                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                    SDL_SetRenderDrawColor(renderer, 50, 169, 86, 255);
                     SDL_RenderFillRect(renderer, &rect);
                 }
             }
