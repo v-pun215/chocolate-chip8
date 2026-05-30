@@ -16,6 +16,8 @@ struct CHIP8 {
 
     uint8_t delay_timer = 0;
 
+    array<bool, 16> keys = {};
+
     uint8_t sound_timer = 0;
 
     array<uint8_t, 16> V = {}; // variable registers;
@@ -77,7 +79,7 @@ struct CHIP8 {
     }
 
     bool key_pressed(uint16_t key) {
-        // TO DO
+        return keys[key];
     }
 
     uint16_t fetch() {
@@ -89,7 +91,7 @@ struct CHIP8 {
         return combined;
     }
 
-    void decode(uint16_t opcode) {
+    void decode(uint16_t opcode, const bool& modernshift) {
         uint8_t first_nibble = (opcode & 0xF000) >> 12;
 
         switch (first_nibble) {
@@ -142,60 +144,76 @@ struct CHIP8 {
                 uint8_t X = (opcode & 0x0F00) >> 8;
                 uint8_t Y = (opcode & 0x00F0) >> 4;
                 switch (opcode & 0x000F) {
-                    case 0:
+                    case 0x0:
                     V[X] = V[Y]; // vx is set to vy
                     break;
 
-                    case 1:
+                    case 0x1:
                     V[X] = V[X]|V[Y]; // vx is set to bitwise OR of vx and vy
                     break;
 
-                    case 2:
+                    case 0x2:
                     V[X] = V[X]&V[Y]; // vx is set to bitwise AND of vx and vy
                     break;
 
-                    case 3:
+                    case 0x3:
                     V[X] = V[X]^V[Y]; // vx is set to XOR of vx and vy
                     break;
 
-                    case 4:
-                    V[X] = V[X]+V[Y]; // vx is set to sum of vx and vy
-                    if (V[X]+V[Y] >255) {
-                        V[0xF] = 1;
-                    } else {
-                        V[0xF] = 0;
+                    case 0x4: {
+                        auto crn_VX = V[X];
+                        auto crn_VY = V[Y];
+                        V[X] = V[X]+V[Y]; // vx is set to sum of vx and vy
+                        if (crn_VX+crn_VY >255) {
+                            V[0xF] = 1;
+                        } else {
+                            V[0xF] = 0;
+                        }
+                        break;
                     }
-                    break;
 
-                    case 5:
-                    V[X] = V[X] - V[Y];
-                    if (V[X]>=V[Y]) {
-                        V[0xF] = 1;
-                    } else {
-                        V[0xF] = 0;
+                    case 0x5: {
+                        auto crn_VX = V[X];
+                        auto crn_VY = V[Y];
+                        V[X] = V[X] - V[Y];
+                        if (crn_VX >= crn_VY) {
+                            V[0xF] = 1;
+                        } else {
+                            V[0xF] = 0;
+                        }
+
+                        break;
                     }
-                    break;
 
-                    case 7:
-                    V[X] = V[Y] - V[X];
-                    if (V[Y]>=V[X]) {
-                        V[0xF] = 1;
-                    } else {
-                        V[0xF] = 0;
+                    case 0x7: {
+                        auto crn_VX = V[X];
+                        auto crn_VY = V[Y];
+                        V[X] = V[Y] - V[X];
+                        if (crn_VY >= crn_VX) {
+                            V[0xF] = 1;
+                        } else {
+                            V[0xF] = 0;
+                        }
+                        
+                        break;
                     }
-                    break;
 
-                    case 6:
-                    V[X] = V[Y];
-                    V[X] >> 1; // shift to the right 1
+                    case 0x6: {// SHFT
+                        auto crn_VX = V[X];
+                        if (!modernshift) {V[X] = V[Y];}
+                        
+                        V[X] = V[X] >> 1; // shift to the right 1
+                        V[0xF] = crn_VX & 0x1;  // set VF to 1 if bit shifted out was 1, 0 if was 0;
+                        break;
+                    }
+
+                    case 0xE: // SHFT
+                    auto crn_VX = V[X];
+                    if (!modernshift) {V[X] = V[Y];}
                     
-                    V[0xF] = V[X] & 1; // set VF to 1 if bit shifted out was 1, 0 if was 0;
-                    break;
-
-                    case 0xE:
-                    V[X] = V[Y];
-                    V[X] << 1; // shift to left 1
-                    V[0xF] = (V[X] >> 15) & 1; // set VF to 1 if bit shifted out was 1, 0 if was 0
+                    V[X] = V[X] << 1; // shift to left 1
+                    V[0xF] = ((crn_VX & 0x80 )  >> 7) & 0x1; // set VF to 1 if bit shifted out was 1, 0 if was 0
+                    
                     break;
 
                 }
@@ -314,11 +332,61 @@ struct CHIP8 {
 
                     case 0x1E: // add to index
                     I+=V[X];
+
+                    if (I > 0xFFF) {
+                        V[0xF] = 1;
+                    }
                     break;
 
+                    case 0x0A: { // get key
+                        bool truth = false;
+                        for (int i = 0; i < 16; i++) {
+                            if (keys[i]) {
+                                std::cout << "OMG! Instruction knows key pressed: " << keys[i] << '\n';
+                                V[X] = i;
+                                truth = true;
+                                break;
+                            }
+                        }
+                        if (!truth) {
+                                PC-=2;
+                        }
+                        break;
+                    }
+                    case 0x29: { // font character
+                        I = 0x50 + V[X] * 5;
+                        break;
+                    }
+
+                    case 0x33: { // binary coded decimal conversion
+                        auto hundreds = V[X] / 100;
+                        auto tens = (V[X] / 10) % 10;
+                        auto ones = V[X] % 10;
+
+                        memory[I] = hundreds;
+                        memory[I+1] = tens;
+                        memory[I+2] = ones;
+                        break;
+                    }
+                    
+                    case 0x55: {
+                        for (int i = 0; i<=X; i++) {
+                            memory[I+i] = V[i];
+                        }
+                        break;
+                    }
+
+                    case 0x65: {
+                        for (int i =0; i<=X;i++) {
+                            V[i] = memory[I + i];
+                        }
+                        break;
+                        
+                    }
                     
 
                 }
+                break;
             }
 
 
@@ -328,11 +396,37 @@ struct CHIP8 {
     }
 };
 
+void readSettings(bool& modernshift) {
+    ifstream settings("settings.txt");
+    std::cout << "Reading settings...\n";
+    if (!settings.is_open()) {
+        std::cout << "No settings.txt found, ignoring\n";
+    } else {
+        std::string line;
+        while (getline(settings, line)) {
+            if (line.empty() || line[0] == *"#") {
+                continue;
+            } 
+            size_t eqpos = line.find('=');
+            if (eqpos != string::npos) {
+                string key = line.substr(0, eqpos);
+                string value = line.substr(eqpos +1);
+
+                if (key=="modernshift" && value =="1") {
+                    modernshift=true;
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc<=1) {
         std::cout << "USAGE: ROM path";
         return 0;
     }
+    bool modernshift = false;
+    readSettings(modernshift);
     CHIP8 chips;
     chips.init();
     try {
@@ -342,10 +436,13 @@ int main(int argc, char* argv[]) {
     }
     Display::init(10);
     while (true) {
-        if (Display::should_quit()) {
+        //this_thread::sleep_for(chrono::milliseconds(11));
+        if (Display::should_quit(chips.keys)) {
             break;
         }
-        chips.decode(chips.fetch());
+        auto fetche = chips.fetch();
+        //std::cout << "FETCHED: " << fetche << '\n';
+        chips.decode(fetche, modernshift);
         Display::render(chips.display, 10);
     }
     
