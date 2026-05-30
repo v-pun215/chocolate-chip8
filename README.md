@@ -1,11 +1,14 @@
 # Chocolate CHIP-8
 A simple and configurable CHIP-8 emulator/interpreter written in C++
+![screenshot](https://cdn.hackclub.com/019e7852-fa1a-7f7c-9e9a-92f0b58bcbbe/image.png)
+
 
 ## Requirements
 libSDL2
 
 ## Technicals
 Audio and Display is built using SDL2.
+
 
 ## Supported Instructions
 I aimed to support the original version of CHIP-8 running on the COSMAC VIP. 
