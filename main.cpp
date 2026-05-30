@@ -1,5 +1,5 @@
 #include <bits/stdc++.h>
-#include "display.h"
+#include "sdl.h"
 
 using namespace std;
 
@@ -389,10 +389,15 @@ struct CHIP8 {
                 break;
             }
 
+            default:
+            std::cout << "UNSUPPORTED INSTRUCTION CALLED: " << opcode << '\n';
+            break;
+
 
             
 
         }
+        
     }
 };
 
@@ -435,15 +440,31 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     Display::init(10);
+    Display::init_audio();
+    Uint32 last_timer = SDL_GetTicks();
     while (true) {
         //this_thread::sleep_for(chrono::milliseconds(11));
         if (Display::should_quit(chips.keys)) {
             break;
         }
+        Uint32 now = SDL_GetTicks();
         auto fetche = chips.fetch();
         //std::cout << "FETCHED: " << fetche << '\n';
         chips.decode(fetche, modernshift);
+        if (now - last_timer >= 16) {
+            if (chips.delay_timer > 0) {
+                chips.delay_timer--;
+            }
+            if (chips.sound_timer > 0) {
+                chips.sound_timer--;
+            }
+            Display::update_audio(chips.sound_timer);
+            last_timer = now;
+        }
+        
         Display::render(chips.display, 10);
+        
+        SDL_Delay(1);
     }
     
 }

@@ -7,10 +7,12 @@ using namespace std;
 namespace Display {
     static SDL_Window* window = nullptr;
     static SDL_Renderer* renderer = nullptr;
+    static bool audio_playing = false;
+    static int audio_sample_pos = 0;
 
     
     void init(int scale) {
-        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
             std::cerr << "error: sdl could not be initialised.";
         }
 
@@ -123,6 +125,38 @@ namespace Display {
 
         }
         return quit;
+    }
+
+    void audio_callback(void* userdata, Uint8* stream, int len) {
+        Sint16* buffer = (Sint16*)stream;
+        int samples = len /2;
+
+        for (int i=0; i<samples;i++) {
+            if (audio_playing) {
+                buffer[i] = (Sint16)(28000 * sin(audio_sample_pos * 2 * M_PI * 440 / 44100));
+                audio_sample_pos++;
+            } else {
+                buffer[i] = 0;
+            }
+        }
+        
+    }
+
+    void init_audio() {
+        SDL_AudioSpec spec;
+        spec.freq = 44100;
+        spec.format = AUDIO_S16SYS;
+        spec.channels = 1;
+        spec.samples = 512;
+        spec.callback = audio_callback;
+        spec.userdata = nullptr;
+
+        SDL_OpenAudio(&spec, nullptr);
+        SDL_PauseAudio(0);
+    }
+
+    void update_audio(uint8_t sound_timer) {
+        audio_playing = sound_timer > 0;
     }
 
 
